@@ -6,6 +6,7 @@ require 'dynamoid/associations/has_many'
 require 'dynamoid/associations/belongs_to'
 require 'dynamoid/associations/has_one'
 require 'dynamoid/associations/has_and_belongs_to_many'
+require 'dynamoid/associations/embeds_many'
 
 module Dynamoid
 
@@ -25,6 +26,10 @@ module Dynamoid
     end
 
     module ClassMethods
+
+      def embeds_many(name, options = {})
+        association_embed(:embeds_many, name, options)
+      end
 
       # create a has_many association for this document.
       #
@@ -80,17 +85,12 @@ module Dynamoid
 
       private
 
-      # create getters and setters for an association.
-      #
-      # @param [Symbol] symbol the type (:has_one, :has_many, :has_and_belongs_to_many, :belongs_to) of the association
-      # @param [Symbol] name the name of the association
-      # @param [Hash] options options to pass to the association constructor; see above for all valid options
-      #
-      # @since 0.2.0
-      def association(type, name, options = {})
-        # Declare document field.
-        # In simple case it's equivalent to
-        # field "#{name}_ids".to_sym, :set
+      def association_embed(type, name, options = {}, singularize=false)
+
+        # field name, :array
+        #
+        # self.associations[name] = options.merge(type: type)
+
         assoc = Dynamoid::Associations.const_get(type.to_s.camelcase).new(nil, name, options)
         field_name = assoc.declaration_field_name
         field_type = assoc.declaration_field_type
@@ -100,13 +100,50 @@ module Dynamoid
         self.associations[name] = options.merge(type: type)
 
         define_method(name) do
-          @associations[:"#{name}_ids"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
+          @associations[:"#{name}_embedded"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
+        end
+
+      end
+
+      # create getters and setters for an association.
+      #
+      # @param [Symbol] symbol the type (:has_one, :has_many, :has_and_belongs_to_many, :belongs_to) of the association
+      # @param [Symbol] name the name of the association
+      # @param [Hash] options options to pass to the association constructor; see above for all valid options
+      #
+      # @since 0.2.0
+      def association(type, name, options = {}, singularize=false)
+        # Declare document field.
+        # In simple case it's equivalent to
+        # field "#{name}_ids".to_sym, :set
+        name = name.to_s.singularize if singularize
+        afterfix = singularize ? "id" : "ids"
+
+        assoc = Dynamoid::Associations.const_get(type.to_s.camelcase).new(nil, name, options)
+        field_name = assoc.declaration_field_name
+        field_type = assoc.declaration_field_type
+
+        field field_name.to_sym, field_type
+
+        self.associations[name] = options.merge(type: type)
+
+        define_method(name) do
+          @associations[:"#{name}_#{afterfix}"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
         end
 
         define_method("#{name}=".to_sym) do |objects|
-          @associations[:"#{name}_ids"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
-          @associations[:"#{name}_ids"].setter(objects)
+          @associations[:"#{name}_#{afterfix}"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
+          @associations[:"#{name}_#{afterfix}"].setter(objects)
         end
+      end
+
+    end
+
+    private
+
+    def persist_associations
+      self.class.associations.keys.each do |key|
+        self.send(key).persist
       end
     end
 

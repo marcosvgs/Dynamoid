@@ -57,6 +57,20 @@ module Dynamoid #:nodoc:
         :set
       end
 
+      # Create a new instance of the target class without trying to add it to the association. This creates a base, that caller can update before setting or adding it.
+      #
+      # @param [Hash] attribute hash for the new object
+      #
+      # @return [Dynamoid::Document] the newly-created object
+      #
+      # @since 1.1.1
+      def build(attributes = {})
+        target_class.build(attributes)
+      end
+
+      def persist
+      end
+
       private
 
       # The target class name, either inferred through the association's name or specified in options.
@@ -113,17 +127,6 @@ module Dynamoid #:nodoc:
       def source_ids
         # handle case when we store scalar value instead of collection (when foreign_key option is specified)
         Array(source.send(source_attribute)).compact.to_set || Set.new
-      end
-
-      # Create a new instance of the target class without trying to add it to the association. This creates a base, that caller can update before setting or adding it.
-      #
-      # @param [Hash] attribute hash for the new object
-      #
-      # @return [Dynamoid::Document] the newly-created object
-      #
-      # @since 1.1.1
-      def build(attributes = {})
-        target_class.build(attributes)
       end
 
     end

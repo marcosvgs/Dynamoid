@@ -470,6 +470,7 @@ module Dynamoid
     #
     # @since 0.2.0
     def persist(conditions = nil)
+      persist_associations
       run_callbacks(:save) do
         self.hash_key = SecureRandom.uuid if self.hash_key.blank?
 

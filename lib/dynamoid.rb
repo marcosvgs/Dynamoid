@@ -23,6 +23,7 @@ require 'dynamoid/identity_map'
 require 'dynamoid/config'
 require 'dynamoid/components'
 require 'dynamoid/document'
+require 'dynamoid/embedded_document'
 require 'dynamoid/adapter'
 
 require 'dynamoid/tasks/database'
