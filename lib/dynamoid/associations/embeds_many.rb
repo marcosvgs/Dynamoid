@@ -18,13 +18,13 @@ module Dynamoid #:nodoc:
       end
 
       def declaration_field_type
-        :serialized
+        :set
       end
 
       def find_target
         items = []
         (source.send(source_attribute) || []).each do |item|
-          items << target_class.new(self, item)
+          items << target_class.new(self, YAML.load(item))
         end
         items
       end

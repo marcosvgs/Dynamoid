@@ -29,7 +29,7 @@ module Dynamoid #:nodoc:
       if self.send(self.class.hash_key).blank?
         self.send("#{self.class.hash_key}=", SecureRandom.uuid)
       end
-      self.attributes
+      self.attributes.to_yaml
     end
 
     alias :remove :delete
